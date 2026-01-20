@@ -17,8 +17,9 @@ import PasswordConfirmModal from './PasswordConfirmModal'
 import { logActivity } from '../utils/logActivity'
 import './WorkTable.css'
 
-// 27 sütun başlıkları
+// 28 sütun başlıkları
 const COLUMNS = [
+  'İş No',
   'Geliş Tarihi(Arrival Date)',
   'Beklediği Süre(Waiting Time)',
   'Termin tarihi_1/ Delivery date_1',
@@ -49,6 +50,7 @@ const COLUMNS = [
 ]
 
 const FIELD_MAP = {
+  'İş No': 'workNo',
   'Geliş Tarihi(Arrival Date)': 'arrivalDate',
   'Beklediği Süre(Waiting Time)': 'waitingTime',
   'Termin tarihi_1/ Delivery date_1': 'deliveryDate1',
@@ -133,7 +135,58 @@ function WorkTable() {
     }
   }, [])
 
+  // Bekleme sürelerini otomatik güncelle
+  useEffect(() => {
+    const updateWaitingTimes = async () => {
+      if (!works || works.length === 0) return
+
+      for (const work of works) {
+        if (work.arrivalDate) {
+          const newWaitingTime = calculateWaitingTime(work.arrivalDate)
+          if (newWaitingTime !== null && work.waitingTime !== newWaitingTime) {
+            try {
+              const workRef = doc(db, 'works', work.docId)
+              await updateDoc(workRef, {
+                waitingTime: newWaitingTime,
+                updatedAt: new Date()
+              })
+            } catch (error) {
+              console.error(`Bekleme süresi güncellenirken hata (${work.docId}):`, error)
+            }
+          }
+        }
+      }
+    }
+
+    // Sayfa yüklendiğinde bir kez çalıştır
+    updateWaitingTimes()
+
+    // Her 1 saatte bir kontrol et (gerçek zamanlı güncellik için)
+    const interval = setInterval(updateWaitingTimes, 60 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [works])
+
   // works listesi artık onSnapshot ile gerçek zamanlı geliyor
+
+  const calculateWaitingTime = (arrivalDateStr) => {
+    if (!arrivalDateStr) return null
+    try {
+      const arrivalDate = new Date(arrivalDateStr)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      arrivalDate.setHours(0, 0, 0, 0)
+      
+      const diffTime = today - arrivalDate
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays < 0) return null
+      return `${diffDays} gün`
+    } catch (error) {
+      console.error('Bekleme süresi hesaplanırken hata:', error)
+      return null
+    }
+  }
 
   const handleCellCommit = async (workDocId, field, value) => {
     try {
@@ -148,18 +201,34 @@ function WorkTable() {
       }
 
       const workRef = doc(db, 'works', workDocId)
-      await updateDoc(workRef, {
+      const updateData = {
         [field]: value,
         updatedAt: new Date()
-      })
+      }
+
+      // Eğer Geliş Tarihi güncelleniyorsa, Beklediği Süre'yi otomatik hesapla
+      if (field === 'arrivalDate') {
+        const waitingTime = calculateWaitingTime(value)
+        if (waitingTime !== null) {
+          updateData.waitingTime = waitingTime
+        }
+      }
+
+      await updateDoc(workRef, updateData)
       
       setWorks((prev) =>
-        prev.map((work) => (work.docId === workDocId ? { ...work, [field]: value } : work))
+        prev.map((work) => 
+          work.docId === workDocId 
+            ? { ...work, ...updateData } 
+            : work
+        )
       )
       
       // Log kaydet
+      const workForLog = works.find((w) => w.docId === workDocId)
       await logActivity('update', 'works', {
         workDocId,
+        workNo: workForLog?.workNo,
         field,
         fieldLabel: FIELD_LABELS[field] || field,
         oldValue: oldValue || '-',
@@ -173,10 +242,26 @@ function WorkTable() {
 
   const handleAddRow = async () => {
     try {
+      // Otomatik İş No hesapla (mevcut en yüksek workNo + 1)
+      const maxWorkNo = works.reduce((max, work) => {
+        const workNo = work.workNo || 0
+        return workNo > max ? workNo : max
+      }, 0)
+      const nextWorkNo = maxWorkNo + 1
+
       const newWork = {
         ...newRowData,
+        workNo: nextWorkNo,
         createdAt: new Date(),
         updatedAt: new Date()
+      }
+
+      // Eğer Geliş Tarihi girilmişse, Beklediği Süre'yi otomatik hesapla
+      if (newWork.arrivalDate) {
+        const waitingTime = calculateWaitingTime(newWork.arrivalDate)
+        if (waitingTime !== null) {
+          newWork.waitingTime = waitingTime
+        }
       }
       
       // Boş değerleri temizle
@@ -192,6 +277,7 @@ function WorkTable() {
       // Log kaydet
       await logActivity('create', 'works', {
         workDocId: docRef.id,
+        workNo: nextWorkNo,
         summary: {
           mainCustomerName: newWork.mainCustomerName || '-',
           customerName: newWork.customerName || '-',
@@ -221,11 +307,19 @@ function WorkTable() {
         return
       }
 
+      // Yeni İş No hesapla
+      const maxWorkNo = works.reduce((max, work) => {
+        const workNo = work.workNo || 0
+        return workNo > max ? workNo : max
+      }, 0)
+      const nextWorkNo = maxWorkNo + 1
+
       // docId ve timestamp'leri hariç tut, yeni oluştur
-      const { docId, createdAt, updatedAt, ...workData } = workToDuplicate
+      const { docId, createdAt, updatedAt, workNo, ...workData } = workToDuplicate
       
       const newWork = {
         ...workData,
+        workNo: nextWorkNo,
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -236,7 +330,9 @@ function WorkTable() {
       // Log kaydet
       await logActivity('duplicate', 'works', {
         sourceWorkDocId: workDocId,
+        sourceWorkNo: workToDuplicate.workNo,
         workDocId: docRef.id,
+        workNo: nextWorkNo,
         summary: {
           mainCustomerName: newWork.mainCustomerName || '-',
           customerName: newWork.customerName || '-',
@@ -267,6 +363,9 @@ function WorkTable() {
 
   const isProjectCustomerDropdownColumn = (column) =>
     column === 'Ana Müşteri Adı/ Main customer name' || column === 'Müşteri Adı/ Customer name'
+
+  const isDateColumn = (column) =>
+    column.toLowerCase().includes('tarih') || column.toLowerCase().includes('date')
 
   if (loading) {
     return <div className="loading">Yükleniyor...</div>
@@ -345,7 +444,7 @@ function WorkTable() {
                       </select>
                     ) : (
                       <input
-                        type="text"
+                        type={isDateColumn(column) ? 'date' : 'text'}
                         value={newRowData[fieldName] || ''}
                         onChange={(e) =>
                           setNewRowData({
@@ -353,8 +452,18 @@ function WorkTable() {
                             [fieldName]: e.target.value,
                           })
                         }
-                        placeholder={column}
+                        placeholder={
+                          fieldName === 'waitingTime' ? 'Otomatik hesaplanacak' :
+                          fieldName === 'workNo' ? 'Otomatik atanacak' :
+                          column
+                        }
                         className="cell-input"
+                        disabled={fieldName === 'waitingTime' || fieldName === 'workNo'}
+                        style={
+                          (fieldName === 'waitingTime' || fieldName === 'workNo')
+                            ? { cursor: 'not-allowed', opacity: 0.6 }
+                            : {}
+                        }
                       />
                     )}
                   </td>
@@ -394,6 +503,8 @@ function WorkTable() {
                       key={colIndex}
                       className={isEditing ? 'editing' : ''}
                       onDoubleClick={() => {
+                        // "İş No" ve "Beklediği Süre" sütunları otomatik hesaplandığı için düzenlenemez
+                        if (fieldName === 'workNo' || fieldName === 'waitingTime') return
                         setEditingCell(cellKey)
                         setEditingValue(cellValue)
                       }}
@@ -432,7 +543,7 @@ function WorkTable() {
                           </select>
                         ) : (
                           <input
-                            type="text"
+                            type={isDateColumn(column) ? 'date' : 'text'}
                             value={editingValue}
                             onChange={(e) => setEditingValue(e.target.value)}
                             onBlur={async () => {
@@ -509,6 +620,7 @@ function WorkTable() {
             // Log kaydet
             await logActivity('delete', 'works', {
               workDocId: pendingDeleteWorkId,
+              workNo: deletingWork?.workNo,
               summary: deletingWork
                 ? {
                     mainCustomerName: deletingWork.mainCustomerName || '-',

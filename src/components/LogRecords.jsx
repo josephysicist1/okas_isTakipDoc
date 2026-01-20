@@ -147,6 +147,7 @@ function LogRecords() {
 
     const targetId = d.workDocId || d.docId || d.id
     const shortTargetId = toShortId(targetId)
+    const workNo = d.workNo
 
     const summaryPairs = d.summary
       ? Object.entries(d.summary)
@@ -171,7 +172,11 @@ function LogRecords() {
           <span className="logs-detail-primary">{primaryLine}</span>
           <span className="logs-detail-secondary">
             {moduleLabel}
-            {shortTargetId ? <span className="logs-pill">ID: {shortTargetId}</span> : null}
+            {workNo ? (
+              <span className="logs-pill">İş No: {workNo}</span>
+            ) : shortTargetId ? (
+              <span className="logs-pill">ID: {shortTargetId}</span>
+            ) : null}
           </span>
         </div>
 
