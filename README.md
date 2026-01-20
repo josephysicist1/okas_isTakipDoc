@@ -7,10 +7,10 @@ Web üzerinde çalışan, Firebase entegrasyonlu iş takip tablosu uygulaması.
 - ✅ Firebase Authentication (E-posta/Şifre ile giriş ve kayıt)
 - ✅ Firebase Firestore veritabanı entegrasyonu
 - ✅ Excel benzeri tablo arayüzü
-- ✅ 18 sütunlu iş takip tablosu
+- ✅ 27 sütunlu iş takip tablosu
 - ✅ Çift tıklayarak hücre düzenleme
 - ✅ Yeni satır ekleme
-- ✅ Satır silme
+- ✅ Güvenli satır silme (şifre doğrulama gerekli)
 - ✅ Gerçek zamanlı veri senkronizasyonu
 
 ## Kurulum
@@ -99,31 +99,42 @@ npm run firebase:deploy
 
 1. İlk kullanımda kayıt olun (e-posta ve şifre ile)
 2. Giriş yaptıktan sonra iş takip tablosu görüntülenecek
-3. Yeni iş eklemek için üstteki "Yeni İş Ekle" butonunu kullanın
-4. Hücreleri düzenlemek için çift tıklayın
+3. Yeni iş eklemek için üstteki "Yeni İş Ekle" butonunu kullanın veya tablonun ilk satırındaki "Kaydet" butonunu kullanın
+4. Hücreleri düzenlemek için çift tıklayın (değişiklikler otomatik kaydedilir)
 5. Satır silmek için satır başındaki çöp kutusu ikonuna tıklayın
+   - **Güvenlik:** Silme işlemi için şifrenizi girmeniz gerekecek
+   - Bu, yanlışlıkla silme işlemlerini önler
 
 ## Sütunlar
 
-Tablo 18 sütundan oluşmaktadır:
-1. ID
-2. İş Adı
-3. Açıklama
-4. Durum
-5. Öncelik
-6. Atanan Kişi
-7. Başlangıç Tarihi
-8. Bitiş Tarihi
-9. Tahmini Süre (Saat)
-10. Gerçekleşen Süre (Saat)
-11. Kategori
-12. Etiketler
-13. Notlar
-14. Dosya Linki
-15. Müşteri
-16. Proje
-17. Bütçe
-18. Tamamlanma Yüzdesi
+Tablo 27 sütundan oluşmaktadır:
+1. Geliş Tarihi(Arrival Date)
+2. Beklediği Süre(Waiting Time)
+3. Termin tarihi_1/ Delivery date_1
+4. Termin tarihi_2/ Delivery date_2
+5. Termin tarihi_3/ Delivery date_3
+6. Ana Müşteri Adı/ Main customer name
+7. Müşteri Adı/ Customer name
+8. İrsaliye no/ Waybill no
+9. Parça Numarası/ Part Number
+10. FAI/ Seri
+11. Yapılacak işlem/ Finish code
+12. GKR no
+13. Sipariş no/ PO no
+14. IEM
+15. TAI SOIR no
+16. Miktar/ Qty
+17. TAI sipariş no/ TAI po no
+18. Müşteri onayı/ Cust. approved
+19. Sipariş gözden geçirildi mi?/ Order req. Reviewed (Kapasite yeterli mi? Satınalma ihtiyacı var mı?
+20. Seri no var mı veya kritik mi Y/N/ Part traceable or critial? Varsa seri no kaydet/ if applicable record serial no.
+21. Notes/ Notlar
+22. ÜTF Hazırlayan/ Prepared by
+23. ÜTF tarihi/ Date of prs
+24. NCPR no/ Uygunsuzluk n, Ex or In
+25. Hazır/ Finished
+26. Denetim isteme
+27. Satıldı/ Sold
 
 ## Teknolojiler
 

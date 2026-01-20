@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuthState } from './hooks/useAuthState'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
+import ProjectCustomerManagement from './components/ProjectCustomerManagement'
 import './App.css'
 
 function App() {
@@ -27,6 +28,10 @@ function App() {
         <Route
           path="/"
           element={user ? <Dashboard /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/project-customer-management"
+          element={user ? <ProjectCustomerManagement /> : <Navigate to="/login" />}
         />
       </Routes>
     </Router>

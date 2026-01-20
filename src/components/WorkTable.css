@@ -11,6 +11,7 @@
   border-bottom: 1px solid #e0e0e0;
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .add-row-button {
@@ -26,6 +27,22 @@
 }
 
 .add-row-button:hover {
+  opacity: 0.9;
+}
+
+.management-button {
+  background: #093f60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity 0.3s;
+}
+
+.management-button:hover {
   opacity: 0.9;
 }
 
@@ -155,6 +172,33 @@
 .cell-input:focus {
   outline: none;
   border-color: #093f60;
+}
+
+.cell-select {
+  width: 100%;
+  padding: 6px 30px 6px 8px;
+  border: 2px solid #093f60;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background-color: #fff;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23093f60' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px 16px;
+}
+
+.cell-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(9, 63, 96, 0.18);
+}
+
+.cell-select optgroup {
+  font-weight: 700;
 }
 
 .cell-value {
