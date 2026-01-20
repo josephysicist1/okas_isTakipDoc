@@ -38,7 +38,7 @@ function Dashboard() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-content">
-          <h1>İş Takip Tablosu</h1>
+          <h1>OKAS İş Takip Tablosu</h1>
           <div className="user-info">
             <span className="user-email">{user.email}</span>
             <button onClick={handleLogout} className="logout-button">
