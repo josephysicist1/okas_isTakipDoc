@@ -5,6 +5,7 @@ import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import ProjectCustomerManagement from './components/ProjectCustomerManagement'
 import UserManagement from './components/UserManagement'
+import Announcements from './components/Announcements'
 import './App.css'
 
 function App() {
@@ -37,6 +38,10 @@ function App() {
         <Route
           path="/user-management"
           element={user ? <UserManagement /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/announcements"
+          element={user ? <Announcements /> : <Navigate to="/login" />}
         />
       </Routes>
     </Router>

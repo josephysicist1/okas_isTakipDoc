@@ -41,6 +41,9 @@ function Dashboard() {
           <h1>OKAS İş Takip Tablosu</h1>
           <div className="user-info">
             <span className="user-email">{user.email}</span>
+            <button onClick={() => navigate('/announcements')} className="announcements-button">
+              📢 Duyurular
+            </button>
             <button onClick={handleLogout} className="logout-button">
               Çıkış Yap
             </button>

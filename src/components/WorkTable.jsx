@@ -146,6 +146,30 @@ function WorkTable() {
     setPasswordModalOpen(true)
   }
 
+  const handleDuplicateRow = async (workDocId) => {
+    try {
+      const workToDuplicate = works.find(w => w.docId === workDocId)
+      if (!workToDuplicate) {
+        alert('Çoğaltılacak satır bulunamadı.')
+        return
+      }
+
+      // docId ve timestamp'leri hariç tut, yeni oluştur
+      const { docId, createdAt, updatedAt, ...workData } = workToDuplicate
+      
+      const newWork = {
+        ...workData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+
+      await addDoc(collection(db, 'works'), newWork)
+      // onSnapshot zaten güncelleyecek, manuel setWorks'e gerek yok
+    } catch (error) {
+      console.error('Satır çoğaltılırken hata:', error)
+      alert('Satır çoğaltılırken bir hata oluştu: ' + error.message)
+    }
+  }
 
   const getFieldName = (column) => {
     const fieldMap = {
@@ -292,13 +316,22 @@ function WorkTable() {
             {works.map((work, rowIndex) => (
               <tr key={work.docId}>
                 <td className="sticky-col action-col">
-                  <button
-                    onClick={() => handleDeleteRow(work.docId)}
-                    className="delete-button"
-                    title="Sil (Şifre Gerekli)"
-                  >
-                    🗑️
-                  </button>
+                  <div className="row-actions">
+                    <button
+                      onClick={() => handleDuplicateRow(work.docId)}
+                      className="action-btn duplicate-btn"
+                      title="Satırı Çoğalt"
+                    >
+                      Çoğalt
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRow(work.docId)}
+                      className="action-btn delete-btn"
+                      title="Sil (Şifre Gerekli)"
+                    >
+                      Sil
+                    </button>
+                  </div>
                 </td>
                 {COLUMNS.map((column, colIndex) => {
                   const fieldName = getFieldName(column)
