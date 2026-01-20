@@ -1,0 +1,34 @@
+[debug] [2026-01-20T13:36:38.549Z] ----------------------------------------------------------------------
+[debug] [2026-01-20T13:36:38.551Z] Command:       /Users/yusufgok/.nvm/versions/node/v20.19.6/bin/node /Users/yusufgok/.nvm/versions/node/v20.19.6/bin/firebase deploy --only firestore:indexes
+[debug] [2026-01-20T13:36:38.552Z] CLI Version:   15.3.1
+[debug] [2026-01-20T13:36:38.552Z] Platform:      darwin
+[debug] [2026-01-20T13:36:38.552Z] Node Version:  v20.19.6
+[debug] [2026-01-20T13:36:38.552Z] Time:          Tue Jan 20 2026 16:36:38 GMT+0300 (GMT+03:00)
+[debug] [2026-01-20T13:36:38.552Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-20T13:36:38.579Z] Error: EPERM: operation not permitted, open '/Users/yusufgok/.nvm/versions/node/v20.19.6/lib/node_modules/firebase-tools/node_modules/path-key/index.js'
+    at Object.readFileSync (node:fs:449:20)
+    at loadSource (node:internal/modules/cjs/loader:1548:17)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1617:44)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/Users/yusufgok/.nvm/versions/node/v20.19.6/lib/node_modules/firebase-tools/node_modules/cross-spawn/lib/util/resolveCommand.js:5:20)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2026-01-20T13:36:38.852Z] Error: EPERM: operation not permitted, open '/Users/yusufgok/.config/configstore/firebase-tools.json.4164161463'
+    at Object.openSync (node:fs:574:18)
+    at Function.writeFileSync [as sync] (/Users/yusufgok/.nvm/versions/node/v20.19.6/lib/node_modules/firebase-tools/node_modules/write-file-atomic/index.js:205:13)
+    at set all [as all] (/Users/yusufgok/.nvm/versions/node/v20.19.6/lib/node_modules/firebase-tools/node_modules/configstore/index.js:61:20)
+    at Configstore.delete (/Users/yusufgok/.nvm/versions/node/v20.19.6/lib/node_modules/firebase-tools/node_modules/configstore/index.js:101:12)
+    at process.<anonymous> (/Users/yusufgok/.nvm/versions/node/v20.19.6/lib/node_modules/firebase-tools/lib/bin/cli.js:65:45)
+    at process.emit (node:events:536:35)
+    at process.exit (node:internal/process/per_thread:184:15)
+    at Timeout._onTimeout (/Users/yusufgok/.nvm/versions/node/v20.19.6/lib/node_modules/firebase-tools/lib/errorOut.js:20:17)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+[error] 
+[error] Error: An unexpected error has occurred.

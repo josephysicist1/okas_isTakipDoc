@@ -36,6 +36,7 @@ const SUMMARY_LABELS = {
 function LogRecords() {
   const navigate = useNavigate()
   const [logs, setLogs] = useState([])
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [filterAction, setFilterAction] = useState('all')
   const [filterModule, setFilterModule] = useState('all')
@@ -80,16 +81,31 @@ function LogRecords() {
     return () => unsubscribe()
   }, [])
 
+  useEffect(() => {
+    // Tüm kullanıcıları çek
+    const usersQuery = query(collection(db, 'users'))
+    const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+      const usersData = snapshot.docs.map((d) => ({
+        uid: d.id,
+        ...d.data(),
+      }))
+      setUsers(usersData)
+    })
+
+    return () => unsubscribe()
+  }, [])
+
   const userOptions = useMemo(() => {
-    const s = new Set()
-    logs.forEach((l) => s.add(l.userEmail || 'Bilinmiyor'))
-    return Array.from(s).sort((a, b) => String(a).localeCompare(String(b), 'tr'))
-  }, [logs])
+    return users
+      .map((u) => u.email)
+      .filter((email) => email) // Boş email'leri filtrele
+      .sort((a, b) => String(a).localeCompare(String(b), 'tr'))
+  }, [users])
 
   const filteredLogs = logs.filter((log) => {
     if (filterAction !== 'all' && log.action !== filterAction) return false
     if (filterModule !== 'all' && log.module !== filterModule) return false
-    if (filterUser !== 'all' && (log.userEmail || 'Bilinmiyor') !== filterUser) return false
+    if (filterUser !== 'all' && log.userEmail !== filterUser) return false
     return true
   })
 

@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   query,
+  where,
   orderBy,
   onSnapshot,
 } from 'firebase/firestore'
@@ -86,7 +87,7 @@ const FIELD_LABELS = Object.fromEntries(
   Object.entries(FIELD_MAP).map(([label, field]) => [field, label])
 )
 
-function WorkTable() {
+function WorkTable({ selectedProject, setSelectedProject }) {
   const navigate = useNavigate()
   const [works, setWorks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -99,13 +100,25 @@ function WorkTable() {
   const [pendingDeleteWorkId, setPendingDeleteWorkId] = useState(null)
 
   useEffect(() => {
-    const q = query(collection(db, 'works'), orderBy('createdAt', 'desc'))
+    const selectedProjectId = selectedProject?.id
+
+    const q = selectedProjectId
+      ? query(collection(db, 'works'), where('projectId', '==', selectedProjectId), orderBy('workNo', 'asc'))
+      : query(collection(db, 'works'), orderBy('workNo', 'asc'))
+
     const unsub = onSnapshot(
       q,
       (snap) => {
         // Not: bazı eski kayıtlarda "id" alanı doküman içinde bulunabiliyor.
         // Spread sırası yüzünden gerçek Firestore docId ezilebiliyor. Bu yüzden docId ayrı tutuluyor.
-        setWorks(snap.docs.map((d) => ({ docId: d.id, ...d.data() })))
+        const worksData = snap.docs.map((d) => ({ docId: d.id, ...d.data() }))
+        // İş No'ya göre sırala (yoksa en sona at)
+        worksData.sort((a, b) => {
+          const aNo = a.workNo || 999999
+          const bNo = b.workNo || 999999
+          return aNo - bNo
+        })
+        setWorks(worksData)
         setLoading(false)
       },
       (error) => {
@@ -116,12 +129,21 @@ function WorkTable() {
     )
 
     return () => unsub()
-  }, [])
+  }, [selectedProject?.id])
 
   useEffect(() => {
     const projectQuery = query(collection(db, 'projects'), orderBy('createdAt', 'desc'))
     const unsubProjects = onSnapshot(projectQuery, (snap) => {
-      setProjects(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      setProjects(list)
+
+      // Proje seçimi: localStorage -> mevcut proje -> ilk proje
+      const storedProjectId = localStorage.getItem('selectedProjectId')
+      if (!selectedProject && list.length > 0) {
+        const found = storedProjectId ? list.find((p) => p.id === storedProjectId) : null
+        const next = found || list[0]
+        setSelectedProject?.(next)
+      }
     })
 
     const customerQuery = query(collection(db, 'customers'), orderBy('createdAt', 'desc'))
@@ -242,6 +264,11 @@ function WorkTable() {
 
   const handleAddRow = async () => {
     try {
+      if (!selectedProject?.id) {
+        alert('Lütfen önce bir proje seçin.')
+        return
+      }
+
       // Otomatik İş No hesapla (mevcut en yüksek workNo + 1)
       const maxWorkNo = works.reduce((max, work) => {
         const workNo = work.workNo || 0
@@ -252,6 +279,8 @@ function WorkTable() {
       const newWork = {
         ...newRowData,
         workNo: nextWorkNo,
+        projectId: selectedProject.id,
+        projectName: selectedProject.name || '',
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -278,6 +307,8 @@ function WorkTable() {
       await logActivity('create', 'works', {
         workDocId: docRef.id,
         workNo: nextWorkNo,
+        projectId: selectedProject.id,
+        projectName: selectedProject.name || '',
         summary: {
           mainCustomerName: newWork.mainCustomerName || '-',
           customerName: newWork.customerName || '-',
@@ -301,6 +332,11 @@ function WorkTable() {
 
   const handleDuplicateRow = async (workDocId) => {
     try {
+      if (!selectedProject?.id) {
+        alert('Lütfen önce bir proje seçin.')
+        return
+      }
+
       const workToDuplicate = works.find(w => w.docId === workDocId)
       if (!workToDuplicate) {
         alert('Çoğaltılacak satır bulunamadı.')
@@ -320,6 +356,8 @@ function WorkTable() {
       const newWork = {
         ...workData,
         workNo: nextWorkNo,
+        projectId: selectedProject.id,
+        projectName: selectedProject.name || '',
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -333,6 +371,8 @@ function WorkTable() {
         sourceWorkNo: workToDuplicate.workNo,
         workDocId: docRef.id,
         workNo: nextWorkNo,
+        projectId: selectedProject.id,
+        projectName: selectedProject.name || '',
         summary: {
           mainCustomerName: newWork.mainCustomerName || '-',
           customerName: newWork.customerName || '-',
@@ -374,6 +414,33 @@ function WorkTable() {
   return (
     <div className="work-table-container">
       <div className="table-header-actions">
+        <div className="project-filter">
+          <span className="project-filter-label">Projeler:</span>
+          <select
+            className="project-filter-select"
+            value={selectedProject?.id || ''}
+            onChange={(e) => {
+              const nextId = e.target.value
+              const next = projects.find((p) => p.id === nextId) || null
+              setSelectedProject?.(next)
+              if (next?.id) {
+                localStorage.setItem('selectedProjectId', next.id)
+              } else {
+                localStorage.removeItem('selectedProjectId')
+              }
+            }}
+          >
+            <option value="" disabled>
+              Proje seçiniz...
+            </option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name || '(İsimsiz Proje)'}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <button onClick={handleAddRow} className="add-row-button">
           + Yeni İş Ekle
         </button>

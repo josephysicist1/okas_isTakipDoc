@@ -12,6 +12,43 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  align-items: center;
+}
+
+.project-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+}
+
+.project-filter-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+
+.project-filter-select {
+  background: white;
+  border: 2px solid rgba(9, 63, 96, 0.25);
+  color: #093f60;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 260px;
+  transition: all 0.25s ease;
+}
+
+.project-filter-select:focus {
+  outline: none;
+  border-color: #093f60;
+  box-shadow: 0 0 0 3px rgba(9, 63, 96, 0.12);
+}
+
+.project-filter-select:hover {
+  border-color: rgba(9, 63, 96, 0.45);
 }
 
 .add-row-button {

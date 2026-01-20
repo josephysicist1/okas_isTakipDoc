@@ -8,6 +8,7 @@ import './Dashboard.css'
 function Dashboard() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [selectedProject, setSelectedProject] = useState(null)
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -38,7 +39,10 @@ function Dashboard() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-content">
-          <h1>OKAS İş Takip Tablosu</h1>
+          <h1>
+            OKAS İş Takip Tablosu
+            {selectedProject?.name ? ` - ${selectedProject.name}` : ''}
+          </h1>
           <div className="user-info">
             <span className="user-email">{user.email}</span>
             <button onClick={() => navigate('/announcements')} className="announcements-button">
@@ -54,7 +58,7 @@ function Dashboard() {
         </div>
       </header>
       <main className="dashboard-main">
-        <WorkTable />
+        <WorkTable selectedProject={selectedProject} setSelectedProject={setSelectedProject} />
       </main>
     </div>
   )
