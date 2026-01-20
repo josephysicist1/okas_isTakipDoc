@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   collection,
-  getDocs,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   query,
   orderBy,
   onSnapshot,
 } from 'firebase/firestore'
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { db, auth } from '../firebase/config'
+import PasswordConfirmModal from './PasswordConfirmModal'
 import './WorkTable.css'
 
 // 27 sütun başlıkları
@@ -55,9 +56,27 @@ function WorkTable() {
   const [newRowData, setNewRowData] = useState({})
   const [projects, setProjects] = useState([])
   const [customers, setCustomers] = useState([])
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [pendingDeleteWorkId, setPendingDeleteWorkId] = useState(null)
 
   useEffect(() => {
-    loadWorks()
+    const q = query(collection(db, 'works'), orderBy('createdAt', 'desc'))
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        // Not: bazı eski kayıtlarda "id" alanı doküman içinde bulunabiliyor.
+        // Spread sırası yüzünden gerçek Firestore docId ezilebiliyor. Bu yüzden docId ayrı tutuluyor.
+        setWorks(snap.docs.map((d) => ({ docId: d.id, ...d.data() })))
+        setLoading(false)
+      },
+      (error) => {
+        console.error('İşler yüklenirken hata:', error)
+        alert('İşler yüklenirken bir hata oluştu: ' + error.message)
+        setLoading(false)
+      }
+    )
+
+    return () => unsub()
   }, [])
 
   useEffect(() => {
@@ -77,33 +96,18 @@ function WorkTable() {
     }
   }, [])
 
-  const loadWorks = async () => {
-    try {
-      const q = query(collection(db, 'works'), orderBy('createdAt', 'desc'))
-      const querySnapshot = await getDocs(q)
-      const worksData = []
-      querySnapshot.forEach((doc) => {
-        worksData.push({ id: doc.id, ...doc.data() })
-      })
-      setWorks(worksData)
-    } catch (error) {
-      console.error('İşler yüklenirken hata:', error)
-      alert('İşler yüklenirken bir hata oluştu: ' + error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // works listesi artık onSnapshot ile gerçek zamanlı geliyor
 
-  const handleCellCommit = async (workId, field, value) => {
+  const handleCellCommit = async (workDocId, field, value) => {
     try {
-      const workRef = doc(db, 'works', workId)
+      const workRef = doc(db, 'works', workDocId)
       await updateDoc(workRef, {
         [field]: value,
         updatedAt: new Date()
       })
       
       setWorks((prev) =>
-        prev.map((work) => (work.id === workId ? { ...work, [field]: value } : work))
+        prev.map((work) => (work.docId === workDocId ? { ...work, [field]: value } : work))
       )
     } catch (error) {
       console.error('Hücre güncellenirken hata:', error)
@@ -126,8 +130,7 @@ function WorkTable() {
         }
       })
 
-      const docRef = await addDoc(collection(db, 'works'), newWork)
-      setWorks([{ id: docRef.id, ...newWork }, ...works])
+      await addDoc(collection(db, 'works'), newWork)
       setNewRowData({})
     } catch (error) {
       console.error('Satır eklenirken hata:', error)
@@ -135,48 +138,12 @@ function WorkTable() {
     }
   }
 
-  const handleDeleteRow = async (workId) => {
+  const handleDeleteRow = async (workDocId) => {
     if (!window.confirm('Bu satırı silmek istediğinize emin misiniz?')) {
       return
     }
-
-    // Kullanıcıdan şifre iste
-    const password = window.prompt('Silme işlemini onaylamak için lütfen şifrenizi girin:')
-    
-    if (!password) {
-      return // Kullanıcı iptal etti
-    }
-
-    try {
-      // Mevcut kullanıcıyı al
-      const user = auth.currentUser
-      
-      if (!user || !user.email) {
-        alert('Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.')
-        return
-      }
-
-      // Kullanıcının kimliğini doğrula
-      const credential = EmailAuthProvider.credential(user.email, password)
-      await reauthenticateWithCredential(user, credential)
-
-      // Şifre doğru, silme işlemini gerçekleştir
-      await deleteDoc(doc(db, 'works', workId))
-      setWorks(works.filter(work => work.id !== workId))
-      
-      alert('Satır başarıyla silindi.')
-    } catch (error) {
-      console.error('Satır silinirken hata:', error)
-      
-      // Hata mesajını kullanıcı dostu yap
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        alert('Hatalı şifre! Silme işlemi iptal edildi.')
-      } else if (error.code === 'auth/too-many-requests') {
-        alert('Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.')
-      } else {
-        alert('Satır silinirken bir hata oluştu: ' + error.message)
-      }
-    }
+    setPendingDeleteWorkId(workDocId)
+    setPasswordModalOpen(true)
   }
 
 
@@ -242,6 +209,12 @@ function WorkTable() {
           className="management-button"
         >
           Proje / Müşteri Yönetimi
+        </button>
+        <button
+          onClick={() => navigate('/user-management')}
+          className="management-button"
+        >
+          Kullanıcı Yönetimi
         </button>
       </div>
 
@@ -317,10 +290,10 @@ function WorkTable() {
 
             {/* Mevcut işler */}
             {works.map((work, rowIndex) => (
-              <tr key={work.id}>
+              <tr key={work.docId}>
                 <td className="sticky-col action-col">
                   <button
-                    onClick={() => handleDeleteRow(work.id)}
+                    onClick={() => handleDeleteRow(work.docId)}
                     className="delete-button"
                     title="Sil (Şifre Gerekli)"
                   >
@@ -329,7 +302,7 @@ function WorkTable() {
                 </td>
                 {COLUMNS.map((column, colIndex) => {
                   const fieldName = getFieldName(column)
-                  const cellKey = `${work.id}-${fieldName}`
+                  const cellKey = `${work.docId}-${fieldName}`
                   const isEditing = editingCell === cellKey
                   const cellValue = getCellValue(work, column)
 
@@ -349,7 +322,7 @@ function WorkTable() {
                             onChange={async (e) => {
                               const next = e.target.value
                               setEditingValue(next)
-                              await handleCellCommit(work.id, fieldName, next)
+                              await handleCellCommit(work.docId, fieldName, next)
                               setEditingCell(null)
                             }}
                             onBlur={() => setEditingCell(null)}
@@ -380,14 +353,14 @@ function WorkTable() {
                             value={editingValue}
                             onChange={(e) => setEditingValue(e.target.value)}
                             onBlur={async () => {
-                              await handleCellCommit(work.id, fieldName, editingValue)
+                              await handleCellCommit(work.docId, fieldName, editingValue)
                               setEditingCell(null)
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault()
                                 ;(async () => {
-                                  await handleCellCommit(work.id, fieldName, editingValue)
+                                  await handleCellCommit(work.docId, fieldName, editingValue)
                                   setEditingCell(null)
                                 })()
                               } else if (e.key === 'Escape') {
@@ -415,6 +388,57 @@ function WorkTable() {
           <p>Henüz iş eklenmemiş. Yeni iş eklemek için üstteki butonu kullanın.</p>
         </div>
       )}
+
+      <PasswordConfirmModal
+        isOpen={passwordModalOpen}
+        title="Silme işlemini onaylamak için şifrenizi girin"
+        confirmText="Sil"
+        onCancel={() => {
+          setPasswordModalOpen(false)
+          setPendingDeleteWorkId(null)
+        }}
+        onConfirm={async (password) => {
+          try {
+            if (!pendingDeleteWorkId) {
+              throw new Error('Silinecek kayıt seçilemedi. Lütfen tekrar deneyin.')
+            }
+
+            const user = auth.currentUser
+            if (!user || !user.email) {
+              throw new Error('Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.')
+            }
+
+            const credential = EmailAuthProvider.credential(user.email, password)
+            await reauthenticateWithCredential(user, credential)
+
+            const workRef = doc(db, 'works', pendingDeleteWorkId)
+            await deleteDoc(workRef)
+
+            // Silme sonrası doğrulama (server'a gidip hala var mı kontrol et)
+            const checkSnap = await getDoc(workRef)
+            if (checkSnap.exists()) {
+              throw new Error('Silme işlemi tamamlanamadı (kayıt hâlâ mevcut). Yetki/kurallar kontrol edilmeli.')
+            }
+
+            setPasswordModalOpen(false)
+            setPendingDeleteWorkId(null)
+          } catch (error) {
+            console.error('Satır silinirken hata:', error)
+            if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') {
+              throw new Error('Hatalı şifre! Silme işlemi iptal edildi.')
+            }
+            if (error?.code === 'auth/too-many-requests') {
+              throw new Error('Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.')
+            }
+            if (error?.code === 'permission-denied') {
+              throw new Error('Yetki hatası: Silme izni yok. Firestore rules kontrol edin.')
+            }
+            const code = error?.code ? String(error.code) : ''
+            const msg = error?.message ? String(error.message) : 'Bilinmeyen hata'
+            throw new Error(`${code ? `${code}: ` : ''}${msg}`)
+          }
+        }}
+      />
     </div>
   )
 }

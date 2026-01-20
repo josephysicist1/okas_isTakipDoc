@@ -4,6 +4,7 @@ import { useAuthState } from './hooks/useAuthState'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import ProjectCustomerManagement from './components/ProjectCustomerManagement'
+import UserManagement from './components/UserManagement'
 import './App.css'
 
 function App() {
@@ -32,6 +33,10 @@ function App() {
         <Route
           path="/project-customer-management"
           element={user ? <ProjectCustomerManagement /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/user-management"
+          element={user ? <UserManagement /> : <Navigate to="/login" />}
         />
       </Routes>
     </Router>

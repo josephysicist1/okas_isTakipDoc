@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { auth, db } from '../firebase/config'
+import PasswordConfirmModal from './PasswordConfirmModal'
 import './ProjectCustomerManagement.css'
 
 function normalize(str) {
@@ -188,6 +189,9 @@ export default function ProjectCustomerManagement() {
   const [addProjectOpen, setAddProjectOpen] = useState(false)
   const [addCustomerOpen, setAddCustomerOpen] = useState(false)
 
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState(null) // { type: 'project'|'customer', id: string }
+
   useEffect(() => {
     const projectQuery = query(collection(db, 'projects'), orderBy('createdAt', 'desc'))
     const unsubProjects = onSnapshot(projectQuery, (snap) => {
@@ -230,45 +234,15 @@ export default function ProjectCustomerManagement() {
   const deleteProject = async () => {
     if (!selectedProjectId) return
     if (!window.confirm('Projeyi silmek istediğinize emin misiniz?')) return
-
-    const password = window.prompt('Silme işlemini onaylamak için lütfen şifrenizi girin:')
-    if (!password) return
-
-    try {
-      await reauthWithPassword(password)
-      await deleteDoc(doc(db, 'projects', selectedProjectId))
-      setSelectedProjectId(null)
-    } catch (error) {
-      if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') {
-        alert('Hatalı şifre! Silme işlemi iptal edildi.')
-      } else if (error?.code === 'auth/too-many-requests') {
-        alert('Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.')
-      } else {
-        alert(error?.message || 'Silme sırasında bir hata oluştu.')
-      }
-    }
+    setPendingDelete({ type: 'project', id: selectedProjectId })
+    setPasswordModalOpen(true)
   }
 
   const deleteCustomer = async () => {
     if (!selectedCustomerId) return
     if (!window.confirm('Müşteriyi silmek istediğinize emin misiniz?')) return
-
-    const password = window.prompt('Silme işlemini onaylamak için lütfen şifrenizi girin:')
-    if (!password) return
-
-    try {
-      await reauthWithPassword(password)
-      await deleteDoc(doc(db, 'customers', selectedCustomerId))
-      setSelectedCustomerId(null)
-    } catch (error) {
-      if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') {
-        alert('Hatalı şifre! Silme işlemi iptal edildi.')
-      } else if (error?.code === 'auth/too-many-requests') {
-        alert('Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.')
-      } else {
-        alert(error?.message || 'Silme sırasında bir hata oluştu.')
-      }
-    }
+    setPendingDelete({ type: 'customer', id: selectedCustomerId })
+    setPasswordModalOpen(true)
   }
 
   return (
@@ -323,6 +297,38 @@ export default function ProjectCustomerManagement() {
         isOpen={addCustomerOpen}
         onClose={() => setAddCustomerOpen(false)}
         onSubmit={addCustomer}
+      />
+
+      <PasswordConfirmModal
+        isOpen={passwordModalOpen}
+        title="Silme işlemini onaylamak için şifrenizi girin"
+        confirmText="Sil"
+        onCancel={() => {
+          setPasswordModalOpen(false)
+          setPendingDelete(null)
+        }}
+        onConfirm={async (password) => {
+          try {
+            await reauthWithPassword(password)
+            if (pendingDelete?.type === 'project') {
+              await deleteDoc(doc(db, 'projects', pendingDelete.id))
+              setSelectedProjectId(null)
+            } else if (pendingDelete?.type === 'customer') {
+              await deleteDoc(doc(db, 'customers', pendingDelete.id))
+              setSelectedCustomerId(null)
+            }
+            setPasswordModalOpen(false)
+            setPendingDelete(null)
+          } catch (error) {
+            if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') {
+              throw new Error('Hatalı şifre! Silme işlemi iptal edildi.')
+            }
+            if (error?.code === 'auth/too-many-requests') {
+              throw new Error('Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.')
+            }
+            throw error
+          }
+        }}
       />
     </div>
   )

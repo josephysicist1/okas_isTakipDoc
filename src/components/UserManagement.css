@@ -1,0 +1,303 @@
+.um-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.um-appbar {
+  background: #093f60;
+  color: #fff;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.um-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.um-back:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.um-title {
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+  flex: 1;
+}
+
+.um-right-spacer {
+  width: 40px;
+}
+
+.um-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.um-section-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111;
+  margin: 0 0 10px;
+}
+
+.um-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.um-search {
+  position: relative;
+  width: min(520px, 100%);
+}
+
+.um-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.um-search input {
+  width: 100%;
+  padding: 12px 12px 12px 34px;
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  background: #fff;
+  font-size: 14px;
+}
+
+.um-search input:focus {
+  outline: none;
+  border-color: #093f60;
+}
+
+.um-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.um-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.um-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.um-btn-primary {
+  background: #093f60;
+  color: #fff;
+}
+
+.um-btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.um-btn-ghost {
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #333;
+}
+
+.um-card-list {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1100px) {
+  .um-card-list {
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .um-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .um-actions {
+    justify-content: flex-end;
+  }
+  .um-card-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.um-card {
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.um-card-title {
+  font-weight: 900;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.um-card-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #555;
+  font-size: 13px;
+}
+
+.um-chip {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(9, 63, 96, 0.12);
+  color: #093f60;
+  font-weight: 900;
+}
+
+.um-email {
+  opacity: 0.9;
+  word-break: break-word;
+}
+
+.um-empty {
+  grid-column: 1 / -1;
+  padding: 16px 0;
+  text-align: center;
+  color: #888;
+}
+
+/* Modal */
+.um-modal {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.um-modal-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid #eee;
+}
+
+.um-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.um-modal-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.um-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 800;
+  color: #333;
+  font-size: 13px;
+}
+
+.um-field input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  font-size: 14px;
+}
+
+.um-field input:focus {
+  outline: none;
+  border-color: #093f60;
+}
+
+.um-select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  font-size: 14px;
+  background: #fff;
+}
+
+.um-select:focus {
+  outline: none;
+  border-color: #093f60;
+}
+
+.um-password-row {
+  display: flex;
+  gap: 10px;
+}
+
+.um-toggle {
+  min-width: 90px;
+  border-radius: 10px;
+  border: 1px solid #d0d0d0;
+  background: #f6f6f6;
+  color: #333;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.um-toggle:hover {
+  background: #ededed;
+}
+
+.um-hint {
+  margin-top: 8px;
+  color: #777;
+  font-size: 12px;
+}
+
+.um-error {
+  background-color: #fee;
+  color: #c33;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  border: 1px solid #fcc;
+}
+
+.um-modal-actions {
+  padding: 14px 18px 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #eee;
+}
+

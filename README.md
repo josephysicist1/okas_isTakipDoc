@@ -11,6 +11,7 @@ Web üzerinde çalışan, Firebase entegrasyonlu iş takip tablosu uygulaması.
 - ✅ Çift tıklayarak hücre düzenleme
 - ✅ Yeni satır ekleme
 - ✅ Güvenli satır silme (şifre doğrulama gerekli)
+- ✅ Kullanıcı Yönetimi (Firebase Auth + Firestore)
 - ✅ Gerçek zamanlı veri senkronizasyonu
 
 ## Kurulum
@@ -104,6 +105,9 @@ npm run firebase:deploy
 5. Satır silmek için satır başındaki çöp kutusu ikonuna tıklayın
    - **Güvenlik:** Silme işlemi için şifrenizi girmeniz gerekecek
    - Bu, yanlışlıkla silme işlemlerini önler
+6. Kullanıcı eklemek için "Kullanıcı Yönetimi" sayfasına gidin
+   - Yeni kullanıcılar **Firebase Auth** üzerinde oluşturulur
+   - Aynı zamanda **Firestore `users`** koleksiyonuna profil kaydı yazılır
 
 ## Sütunlar
 
