@@ -9,6 +9,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  where,
+  getDocs,
 } from 'firebase/firestore'
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { auth, db } from '../firebase/config'
@@ -311,8 +313,24 @@ export default function ProjectCustomerManagement() {
           try {
             await reauthWithPassword(password)
             if (pendingDelete?.type === 'project') {
+              // Önce projeye ait tüm işleri sil (cascade delete)
+              const worksQuery = query(
+                collection(db, 'works'),
+                where('projectId', '==', pendingDelete.id)
+              )
+              const worksSnapshot = await getDocs(worksQuery)
+              
+              // Tüm işleri sil
+              const deletePromises = worksSnapshot.docs.map((workDoc) =>
+                deleteDoc(doc(db, 'works', workDoc.id))
+              )
+              await Promise.all(deletePromises)
+              
+              // Sonra projeyi sil
               await deleteDoc(doc(db, 'projects', pendingDelete.id))
               setSelectedProjectId(null)
+              
+              alert(`Proje ve ${worksSnapshot.size} adet iş kaydı silindi.`)
             } else if (pendingDelete?.type === 'customer') {
               await deleteDoc(doc(db, 'customers', pendingDelete.id))
               setSelectedCustomerId(null)
