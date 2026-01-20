@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard'
 import ProjectCustomerManagement from './components/ProjectCustomerManagement'
 import UserManagement from './components/UserManagement'
 import Announcements from './components/Announcements'
+import LogRecords from './components/LogRecords'
 import './App.css'
 
 function App() {
@@ -42,6 +43,10 @@ function App() {
         <Route
           path="/announcements"
           element={user ? <Announcements /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/log-records"
+          element={user ? <LogRecords /> : <Navigate to="/login" />}
         />
       </Routes>
     </Router>

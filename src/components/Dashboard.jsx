@@ -44,6 +44,9 @@ function Dashboard() {
             <button onClick={() => navigate('/announcements')} className="announcements-button">
               📢 Duyurular
             </button>
+            <button onClick={() => navigate('/log-records')} className="logs-button">
+              📋 Log Kayıtları
+            </button>
             <button onClick={handleLogout} className="logout-button">
               Çıkış Yap
             </button>

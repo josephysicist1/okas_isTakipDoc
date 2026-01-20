@@ -14,6 +14,7 @@ import {
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { db, auth } from '../firebase/config'
 import PasswordConfirmModal from './PasswordConfirmModal'
+import { logActivity } from '../utils/logActivity'
 import './WorkTable.css'
 
 // 27 sütun başlıkları
@@ -46,6 +47,42 @@ const COLUMNS = [
   'Denetim isteme',
   'Satıldı/ Sold'
 ]
+
+const FIELD_MAP = {
+  'Geliş Tarihi(Arrival Date)': 'arrivalDate',
+  'Beklediği Süre(Waiting Time)': 'waitingTime',
+  'Termin tarihi_1/ Delivery date_1': 'deliveryDate1',
+  'Termin tarihi_2/ Delivery date_2': 'deliveryDate2',
+  'Termin tarihi_3/ Delivery date_3': 'deliveryDate3',
+  'Ana Müşteri Adı/ Main customer name': 'mainCustomerName',
+  'Müşteri Adı/ Customer name': 'customerName',
+  'İrsaliye no/ Waybill no': 'waybillNo',
+  'Parça Numarası/ Part Number': 'partNumber',
+  'FAI/ Seri': 'faiSeri',
+  'Yapılacak işlem/ Finish code': 'finishCode',
+  'GKR no': 'gkrNo',
+  'Sipariş no/ PO no': 'poNo',
+  'IEM': 'iem',
+  'TAI SOIR no': 'taiSoirNo',
+  'Miktar/ Qty': 'qty',
+  'TAI sipariş no/ TAI po no': 'taiPoNo',
+  'Müşteri onayı/ Cust. approved': 'custApproved',
+  'Sipariş gözden geçirildi mi?/ Order req. Reviewed (Kapasite yeterli mi? Satınalma ihtiyacı var mı?':
+    'orderReviewed',
+  'Seri no var mı veya kritik mi Y/N/ Part traceable or critial? Varsa seri no kaydet/ if applicable record serial no.':
+    'partTraceable',
+  'Notes/ Notlar': 'notes',
+  'ÜTF Hazırlayan/ Prepared by': 'preparedBy',
+  'ÜTF tarihi/ Date of prs': 'dateOfPrs',
+  'NCPR no/ Uygunsuzluk n, Ex or In': 'ncprNo',
+  'Hazır/ Finished': 'finished',
+  'Denetim isteme': 'denetimIsteme',
+  'Satıldı/ Sold': 'sold',
+}
+
+const FIELD_LABELS = Object.fromEntries(
+  Object.entries(FIELD_MAP).map(([label, field]) => [field, label])
+)
 
 function WorkTable() {
   const navigate = useNavigate()
@@ -100,6 +137,16 @@ function WorkTable() {
 
   const handleCellCommit = async (workDocId, field, value) => {
     try {
+      const oldValueRaw = works.find((w) => w.docId === workDocId)?.[field]
+      const oldValue =
+        oldValueRaw === undefined || oldValueRaw === null ? '' : String(oldValueRaw).substring(0, 200)
+      const newValue = value === undefined || value === null ? '' : String(value).substring(0, 200)
+
+      // Değer değişmediyse hiçbir şey yapma (ne DB güncelle, ne log yaz)
+      if (oldValue === newValue) {
+        return
+      }
+
       const workRef = doc(db, 'works', workDocId)
       await updateDoc(workRef, {
         [field]: value,
@@ -109,6 +156,15 @@ function WorkTable() {
       setWorks((prev) =>
         prev.map((work) => (work.docId === workDocId ? { ...work, [field]: value } : work))
       )
+      
+      // Log kaydet
+      await logActivity('update', 'works', {
+        workDocId,
+        field,
+        fieldLabel: FIELD_LABELS[field] || field,
+        oldValue: oldValue || '-',
+        newValue: newValue || '-',
+      })
     } catch (error) {
       console.error('Hücre güncellenirken hata:', error)
       alert('Güncelleme sırasında bir hata oluştu: ' + error.message)
@@ -130,8 +186,19 @@ function WorkTable() {
         }
       })
 
-      await addDoc(collection(db, 'works'), newWork)
+      const docRef = await addDoc(collection(db, 'works'), newWork)
       setNewRowData({})
+      
+      // Log kaydet
+      await logActivity('create', 'works', {
+        workDocId: docRef.id,
+        summary: {
+          mainCustomerName: newWork.mainCustomerName || '-',
+          customerName: newWork.customerName || '-',
+          partNumber: newWork.partNumber || '-',
+          waybillNo: newWork.waybillNo || '-',
+        },
+      })
     } catch (error) {
       console.error('Satır eklenirken hata:', error)
       alert('Satır eklenirken bir hata oluştu: ' + error.message)
@@ -163,8 +230,20 @@ function WorkTable() {
         updatedAt: new Date()
       }
 
-      await addDoc(collection(db, 'works'), newWork)
+      const docRef = await addDoc(collection(db, 'works'), newWork)
       // onSnapshot zaten güncelleyecek, manuel setWorks'e gerek yok
+      
+      // Log kaydet
+      await logActivity('duplicate', 'works', {
+        sourceWorkDocId: workDocId,
+        workDocId: docRef.id,
+        summary: {
+          mainCustomerName: newWork.mainCustomerName || '-',
+          customerName: newWork.customerName || '-',
+          partNumber: newWork.partNumber || '-',
+          waybillNo: newWork.waybillNo || '-',
+        },
+      })
     } catch (error) {
       console.error('Satır çoğaltılırken hata:', error)
       alert('Satır çoğaltılırken bir hata oluştu: ' + error.message)
@@ -172,36 +251,7 @@ function WorkTable() {
   }
 
   const getFieldName = (column) => {
-    const fieldMap = {
-      'Geliş Tarihi(Arrival Date)': 'arrivalDate',
-      'Beklediği Süre(Waiting Time)': 'waitingTime',
-      'Termin tarihi_1/ Delivery date_1': 'deliveryDate1',
-      'Termin tarihi_2/ Delivery date_2': 'deliveryDate2',
-      'Termin tarihi_3/ Delivery date_3': 'deliveryDate3',
-      'Ana Müşteri Adı/ Main customer name': 'mainCustomerName',
-      'Müşteri Adı/ Customer name': 'customerName',
-      'İrsaliye no/ Waybill no': 'waybillNo',
-      'Parça Numarası/ Part Number': 'partNumber',
-      'FAI/ Seri': 'faiSeri',
-      'Yapılacak işlem/ Finish code': 'finishCode',
-      'GKR no': 'gkrNo',
-      'Sipariş no/ PO no': 'poNo',
-      'IEM': 'iem',
-      'TAI SOIR no': 'taiSoirNo',
-      'Miktar/ Qty': 'qty',
-      'TAI sipariş no/ TAI po no': 'taiPoNo',
-      'Müşteri onayı/ Cust. approved': 'custApproved',
-      'Sipariş gözden geçirildi mi?/ Order req. Reviewed (Kapasite yeterli mi? Satınalma ihtiyacı var mı?': 'orderReviewed',
-      'Seri no var mı veya kritik mi Y/N/ Part traceable or critial? Varsa seri no kaydet/ if applicable record serial no.': 'partTraceable',
-      'Notes/ Notlar': 'notes',
-      'ÜTF Hazırlayan/ Prepared by': 'preparedBy',
-      'ÜTF tarihi/ Date of prs': 'dateOfPrs',
-      'NCPR no/ Uygunsuzluk n, Ex or In': 'ncprNo',
-      'Hazır/ Finished': 'finished',
-      'Denetim isteme': 'denetimIsteme',
-      'Satıldı/ Sold': 'sold'
-    }
-    return fieldMap[column] || column.toLowerCase().replace(/\s+/g, '')
+    return FIELD_MAP[column] || column.toLowerCase().replace(/\s+/g, '')
   }
 
   const getCellValue = (work, column) => {
@@ -444,6 +494,9 @@ function WorkTable() {
             const credential = EmailAuthProvider.credential(user.email, password)
             await reauthenticateWithCredential(user, credential)
 
+            // Silmeden ÖNCE iş detaylarını al (log için)
+            const deletingWork = works.find((w) => w.docId === pendingDeleteWorkId)
+            
             const workRef = doc(db, 'works', pendingDeleteWorkId)
             await deleteDoc(workRef)
 
@@ -452,6 +505,24 @@ function WorkTable() {
             if (checkSnap.exists()) {
               throw new Error('Silme işlemi tamamlanamadı (kayıt hâlâ mevcut). Yetki/kurallar kontrol edilmeli.')
             }
+
+            // Log kaydet
+            await logActivity('delete', 'works', {
+              workDocId: pendingDeleteWorkId,
+              summary: deletingWork
+                ? {
+                    mainCustomerName: deletingWork.mainCustomerName || '-',
+                    customerName: deletingWork.customerName || '-',
+                    partNumber: deletingWork.partNumber || '-',
+                    waybillNo: deletingWork.waybillNo || '-',
+                    arrivalDate: deletingWork.arrivalDate || '-',
+                    waitingTime: deletingWork.waitingTime || '-',
+                    deliveryDate1: deletingWork.deliveryDate1 || '-',
+                    poNo: deletingWork.poNo || '-',
+                    finishCode: deletingWork.finishCode || '-',
+                  }
+                : { note: 'İş detayları bulunamadı' },
+            })
 
             setPasswordModalOpen(false)
             setPendingDeleteWorkId(null)
