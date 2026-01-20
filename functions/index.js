@@ -26,8 +26,9 @@ export const createUser = onCall({ region: 'europe-west1' }, async (request) => 
   if (password.length < 6) {
     throw new HttpsError('invalid-argument', 'Şifre en az 6 karakter olmalı.')
   }
-  if (!['user', 'admin'].includes(role)) {
-    throw new HttpsError('invalid-argument', 'role sadece user veya admin olabilir.')
+  const allowedRoles = ['user', 'admin', 'mühendis', 'baş mühendis', 'istasyon sorumlusu']
+  if (!allowedRoles.includes(role)) {
+    throw new HttpsError('invalid-argument', `Geçersiz rol. İzin verilen roller: ${allowedRoles.join(', ')}`)
   }
 
   try {

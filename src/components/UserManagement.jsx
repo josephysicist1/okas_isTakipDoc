@@ -80,6 +80,9 @@ function AddUserModal({ isOpen, onClose }) {
             <select value={role} onChange={(e) => setRole(e.target.value)} className="um-select">
               <option value="user">user</option>
               <option value="admin">admin</option>
+              <option value="mühendis">mühendis</option>
+              <option value="baş mühendis">baş mühendis</option>
+              <option value="istasyon sorumlusu">istasyon sorumlusu</option>
             </select>
           </div>
 
