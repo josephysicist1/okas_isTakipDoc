@@ -16,9 +16,10 @@ import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { db, auth } from '../firebase/config'
 import PasswordConfirmModal from './PasswordConfirmModal'
 import { logActivity } from '../utils/logActivity'
+import * as XLSX from 'xlsx'
 import './WorkTable.css'
 
-// 28 sütun başlıkları
+// 29 sütun başlıkları
 const COLUMNS = [
   'İş No',
   'Geliş Tarihi(Arrival Date)',
@@ -47,7 +48,8 @@ const COLUMNS = [
   'NCPR no/ Uygunsuzluk n, Ex or In',
   'Hazır/ Finished',
   'Denetim isteme',
-  'Satıldı/ Sold'
+  'Satıldı/ Sold',
+  'Tanımlama'
 ]
 
 const FIELD_MAP = {
@@ -81,7 +83,17 @@ const FIELD_MAP = {
   'Hazır/ Finished': 'finished',
   'Denetim isteme': 'denetimIsteme',
   'Satıldı/ Sold': 'sold',
+  'Tanımlama': 'tanimlama',
 }
+
+const TANIMLAMA_OPTIONS = [
+  'Hazır',
+  'Üretimde',
+  'Denetimi Geçti',
+  'Üretime Girmeden İade Edildi',
+  'Fatura Edildi',
+  'Uygun Olmayan'
+]
 
 const FIELD_LABELS = Object.fromEntries(
   Object.entries(FIELD_MAP).map(([label, field]) => [field, label])
@@ -191,6 +203,64 @@ function WorkTable({ selectedProject, setSelectedProject }) {
 
   // works listesi artık onSnapshot ile gerçek zamanlı geliyor
 
+  // Excel'e aktar fonksiyonu
+  const exportToExcel = () => {
+    try {
+      if (works.length === 0) {
+        alert('Aktarılacak veri yok.')
+        return
+      }
+
+      // Sütun başlıklarını hazırla (COLUMNS zaten string array)
+      const headers = COLUMNS
+
+      // Veri satırlarını hazırla
+      const dataRows = works.map(work => 
+        COLUMNS.map(columnLabel => {
+          const fieldName = FIELD_MAP[columnLabel]
+          const value = work[fieldName]
+          // Tarih alanlarını formatla
+          if (value instanceof Date) {
+            return value.toLocaleDateString('tr-TR')
+          }
+          return value !== undefined && value !== null ? value : ''
+        })
+      )
+
+      // Başlık + veriler
+      const worksheetData = [headers, ...dataRows]
+
+      // Worksheet oluştur
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+
+      // Sütun genişliklerini ayarla
+      const columnWidths = COLUMNS.map(col => {
+        // Uzun başlıklar için daha geniş sütun
+        const minWidth = Math.max(col.length * 0.8, 15)
+        return { wch: minWidth }
+      })
+      worksheet['!cols'] = columnWidths
+
+      // Workbook oluştur
+      const workbook = XLSX.utils.book_new()
+      const sheetName = selectedProject?.name 
+        ? `${selectedProject.name} - İş Takip`
+        : 'İş Takip Tablosu'
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.substring(0, 30)) // Excel sheet adı max 31 karakter
+
+      // Dosya adı
+      const fileName = selectedProject?.name 
+        ? `${selectedProject.name}_Is_Takip_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.xlsx`
+        : `Is_Takip_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.xlsx`
+
+      // İndir
+      XLSX.writeFile(workbook, fileName)
+    } catch (error) {
+      console.error('Excel aktarım hatası:', error)
+      alert('Excel dosyası oluşturulurken bir hata oluştu: ' + error.message)
+    }
+  }
+
   const calculateWaitingTime = (arrivalDateStr) => {
     if (!arrivalDateStr) return null
     try {
@@ -251,6 +321,8 @@ function WorkTable({ selectedProject, setSelectedProject }) {
       await logActivity('update', 'works', {
         workDocId,
         workNo: workForLog?.workNo,
+        projectId: workForLog?.projectId,
+        projectName: workForLog?.projectName || selectedProject?.name || '',
         field,
         fieldLabel: FIELD_LABELS[field] || field,
         oldValue: oldValue || '-',
@@ -404,6 +476,8 @@ function WorkTable({ selectedProject, setSelectedProject }) {
   const isProjectCustomerDropdownColumn = (column) =>
     column === 'Ana Müşteri Adı/ Main customer name' || column === 'Müşteri Adı/ Customer name'
 
+  const isTanimlamaColumn = (column) => column === 'Tanımlama'
+
   const isDateColumn = (column) =>
     column.toLowerCase().includes('tarih') || column.toLowerCase().includes('date')
 
@@ -455,6 +529,13 @@ function WorkTable({ selectedProject, setSelectedProject }) {
           className="management-button"
         >
           Kullanıcı Yönetimi
+        </button>
+        <button
+          onClick={exportToExcel}
+          className="export-excel-button"
+          disabled={works.length === 0}
+        >
+          📊 Excel'e Aktar
         </button>
       </div>
 
@@ -509,6 +590,24 @@ function WorkTable({ selectedProject, setSelectedProject }) {
                           ))}
                         </optgroup>
                       </select>
+                    ) : isTanimlamaColumn(column) ? (
+                      <select
+                        value={newRowData[fieldName] || ''}
+                        onChange={(e) =>
+                          setNewRowData({
+                            ...newRowData,
+                            [fieldName]: e.target.value,
+                          })
+                        }
+                        className="cell-select"
+                      >
+                        <option value="">Seçiniz...</option>
+                        {TANIMLAMA_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
                       <input
                         type={isDateColumn(column) ? 'date' : 'text'}
@@ -539,8 +638,24 @@ function WorkTable({ selectedProject, setSelectedProject }) {
             </tr>
 
             {/* Mevcut işler */}
-            {works.map((work, rowIndex) => (
-              <tr key={work.docId}>
+            {works.map((work, rowIndex) => {
+              const getTanimlamaClass = (tanimlama) => {
+                switch(tanimlama) {
+                  case 'Hazır': return 'row-hazir'
+                  case 'Üretimde': return 'row-uretimde'
+                  case 'Denetimi Geçti': return 'row-denetim-gecti'
+                  case 'Üretime Girmeden İade Edildi': return 'row-iade'
+                  case 'Fatura Edildi': return 'row-fatura'
+                  case 'Uygun Olmayan': return 'row-uygun-olmayan'
+                  default: return ''
+                }
+              }
+              
+              return (
+              <tr 
+                key={work.docId}
+                className={getTanimlamaClass(work.tanimlama)}
+              >
                 <td className="sticky-col action-col">
                   <div className="row-actions">
                     <button
@@ -608,6 +723,26 @@ function WorkTable({ selectedProject, setSelectedProject }) {
                               ))}
                             </optgroup>
                           </select>
+                        ) : isTanimlamaColumn(column) ? (
+                          <select
+                            value={editingValue}
+                            onChange={async (e) => {
+                              const next = e.target.value
+                              setEditingValue(next)
+                              await handleCellCommit(work.docId, fieldName, next)
+                              setEditingCell(null)
+                            }}
+                            onBlur={() => setEditingCell(null)}
+                            autoFocus
+                            className="cell-select"
+                          >
+                            <option value="">Seçiniz...</option>
+                            {TANIMLAMA_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           <input
                             type={isDateColumn(column) ? 'date' : 'text'}
@@ -639,7 +774,8 @@ function WorkTable({ selectedProject, setSelectedProject }) {
                   )
                 })}
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -688,6 +824,8 @@ function WorkTable({ selectedProject, setSelectedProject }) {
             await logActivity('delete', 'works', {
               workDocId: pendingDeleteWorkId,
               workNo: deletingWork?.workNo,
+              projectId: deletingWork?.projectId,
+              projectName: deletingWork?.projectName || '',
               summary: deletingWork
                 ? {
                     mainCustomerName: deletingWork.mainCustomerName || '-',

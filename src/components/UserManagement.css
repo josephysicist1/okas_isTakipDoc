@@ -539,3 +539,102 @@
   border-top: 1px solid #eee;
   background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
 }
+
+/* User card actions */
+.um-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.um-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.um-action-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.um-action-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.um-action-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.um-edit-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 3px 12px rgba(102, 126, 234, 0.4);
+}
+
+.um-edit-btn:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.um-delete-btn {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  color: white;
+  box-shadow: 0 3px 12px rgba(238, 90, 90, 0.4);
+}
+
+.um-delete-btn:hover {
+  background: linear-gradient(135deg, #e85c5c 0%, #d94949 100%);
+  box-shadow: 0 6px 20px rgba(238, 90, 90, 0.5);
+}
+
+.um-save-btn {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  color: white;
+  box-shadow: 0 3px 12px rgba(86, 171, 47, 0.4);
+}
+
+.um-save-btn:hover {
+  background: linear-gradient(135deg, #4a9627 0%, #98d053 100%);
+  box-shadow: 0 6px 20px rgba(86, 171, 47, 0.5);
+}
+
+.um-cancel-btn {
+  background: linear-gradient(135deg, #757f9a 0%, #d7dde8 100%);
+  color: #333;
+  box-shadow: 0 3px 12px rgba(117, 127, 154, 0.3);
+}
+
+.um-cancel-btn:hover {
+  background: linear-gradient(135deg, #666f88 0%, #c7cdd8 100%);
+  box-shadow: 0 6px 20px rgba(117, 127, 154, 0.4);
+}
+
+.um-role-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 2px solid #093f60;
+  background: white;
+  font-size: 12px;
+  font-weight: 700;
+  color: #093f60;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.um-role-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(9, 63, 96, 0.2);
+}

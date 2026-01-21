@@ -363,6 +363,13 @@
   font-size: 11px;
 }
 
+.logs-pill-project {
+  background: #093f60;
+  border-color: #093f60;
+  color: white;
+  font-weight: 800;
+}
+
 .logs-detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

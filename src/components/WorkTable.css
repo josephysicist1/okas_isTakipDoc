@@ -83,6 +83,30 @@
   opacity: 0.9;
 }
 
+.export-excel-button {
+  background: linear-gradient(135deg, #1e7e34 0%, #28a745 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.export-excel-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.export-excel-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .table-wrapper {
   overflow-x: auto;
   max-height: calc(100vh - 200px);
@@ -136,6 +160,103 @@
 
 .work-table tbody tr.editing {
   background-color: #fff9e6;
+}
+
+/* Tanımlama durumlarına göre satır renkleri */
+.work-table tbody tr.row-hazir {
+  background-color: #ffeb3b !important;
+}
+
+.work-table tbody tr.row-hazir:hover {
+  background-color: #fdd835 !important;
+}
+
+.work-table tbody tr.row-hazir .sticky-col {
+  background-color: #ffeb3b !important;
+}
+
+.work-table tbody tr.row-hazir:hover .sticky-col {
+  background-color: #fdd835 !important;
+}
+
+.work-table tbody tr.row-uretimde {
+  background-color: #b0bec5 !important;
+}
+
+.work-table tbody tr.row-uretimde:hover {
+  background-color: #a4afb7 !important;
+}
+
+.work-table tbody tr.row-uretimde .sticky-col {
+  background-color: #b0bec5 !important;
+}
+
+.work-table tbody tr.row-uretimde:hover .sticky-col {
+  background-color: #a4afb7 !important;
+}
+
+.work-table tbody tr.row-denetim-gecti {
+  background-color: #c8e6c9 !important;
+}
+
+.work-table tbody tr.row-denetim-gecti:hover {
+  background-color: #b9dbb9 !important;
+}
+
+.work-table tbody tr.row-denetim-gecti .sticky-col {
+  background-color: #c8e6c9 !important;
+}
+
+.work-table tbody tr.row-denetim-gecti:hover .sticky-col {
+  background-color: #b9dbb9 !important;
+}
+
+.work-table tbody tr.row-iade {
+  background-color: #ffcc80 !important;
+}
+
+.work-table tbody tr.row-iade:hover {
+  background-color: #ffb74d !important;
+}
+
+.work-table tbody tr.row-iade .sticky-col {
+  background-color: #ffcc80 !important;
+}
+
+.work-table tbody tr.row-iade:hover .sticky-col {
+  background-color: #ffb74d !important;
+}
+
+.work-table tbody tr.row-fatura {
+  background-color: #e1bee7 !important;
+}
+
+.work-table tbody tr.row-fatura:hover {
+  background-color: #d4acd9 !important;
+}
+
+.work-table tbody tr.row-fatura .sticky-col {
+  background-color: #e1bee7 !important;
+}
+
+.work-table tbody tr.row-fatura:hover .sticky-col {
+  background-color: #d4acd9 !important;
+}
+
+.work-table tbody tr.row-uygun-olmayan {
+  background-color: #ffcdd2 !important;
+}
+
+.work-table tbody tr.row-uygun-olmayan:hover {
+  background-color: #f9bdc1 !important;
+}
+
+.work-table tbody tr.row-uygun-olmayan .sticky-col {
+  background-color: #ffcdd2 !important;
+}
+
+.work-table tbody tr.row-uygun-olmayan:hover .sticky-col {
+  background-color: #f9bdc1 !important;
 }
 
 .sticky-col {

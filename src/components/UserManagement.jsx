@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
+import { collection, doc, getDoc, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '../firebase/config'
+import { auth, db, functions } from '../firebase/config'
+import PasswordConfirmModal from './PasswordConfirmModal'
 import './UserManagement.css'
 
 function normalize(str) {
@@ -149,6 +150,25 @@ export default function UserManagement() {
   const [users, setUsers] = useState([])
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
+  const [currentUserRole, setCurrentUserRole] = useState(null)
+  const [editingUser, setEditingUser] = useState(null)
+  const [newRoleValue, setNewRoleValue] = useState('')
+  const [deletePasswordModal, setDeletePasswordModal] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
+
+  // Get current user's role
+  useEffect(() => {
+    const getCurrentUserRole = async () => {
+      const currentUser = auth.currentUser
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid))
+        if (userDoc.exists()) {
+          setCurrentUserRole(userDoc.data().role)
+        }
+      }
+    }
+    getCurrentUserRole()
+  }, [])
 
   useEffect(() => {
     const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'))
@@ -157,6 +177,42 @@ export default function UserManagement() {
     })
     return () => unsub()
   }, [])
+
+  const handleDeleteUser = async (user) => {
+    setUserToDelete(user)
+    setDeletePasswordModal(true)
+  }
+
+  const confirmDeleteUser = async (password) => {
+    if (!userToDelete) return
+
+    try {
+      const deleteUserFunc = httpsCallable(functions, 'deleteUser')
+      await deleteUserFunc({ uid: userToDelete.uid })
+      alert(`${userToDelete.email} başarıyla silindi.`)
+      setUserToDelete(null)
+    } catch (error) {
+      console.error('Kullanıcı silme hatası:', error)
+      const msg = error?.message || 'Kullanıcı silinemedi.'
+      alert(msg)
+    }
+  }
+
+  const handleUpdateRole = async (user, newRole) => {
+    if (!newRole || newRole === user.role) return
+
+    try {
+      const updateRoleFunc = httpsCallable(functions, 'updateUserRole')
+      await updateRoleFunc({ uid: user.uid, role: newRole })
+      alert(`${user.email} rolü "${newRole}" olarak güncellendi.`)
+      setEditingUser(null)
+      setNewRoleValue('')
+    } catch (error) {
+      console.error('Rol güncelleme hatası:', error)
+      const msg = error?.message || 'Rol güncellenemedi.'
+      alert(msg)
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = normalize(search)
@@ -196,21 +252,98 @@ export default function UserManagement() {
           </div>
 
           <div className="um-card-list">
-            {filtered.map((u) => (
-              <div key={u.id} className="um-card">
-                <div className="um-card-title">{u.displayName || u.email || '—'}</div>
-                <div className="um-card-sub">
-                  <span className="um-chip">{u.role || 'user'}</span>
-                  <span className="um-email">{u.email || ''}</span>
+            {filtered.map((u) => {
+              const isCurrentUser = auth.currentUser?.uid === u.uid
+              const isAdmin = currentUserRole === 'admin'
+              const isEditingThis = editingUser?.id === u.id
+
+              return (
+                <div key={u.id} className="um-card">
+                  <div className="um-card-header">
+                    <div>
+                      <div className="um-card-title">{u.displayName || u.email || '—'}</div>
+                      <div className="um-card-sub">
+                        {isEditingThis ? (
+                          <select
+                            value={newRoleValue}
+                            onChange={(e) => setNewRoleValue(e.target.value)}
+                            className="um-role-select"
+                          >
+                            <option value="user">user</option>
+                            <option value="admin">admin</option>
+                            <option value="mühendis">mühendis</option>
+                            <option value="baş mühendis">baş mühendis</option>
+                            <option value="istasyon sorumlusu">istasyon sorumlusu</option>
+                          </select>
+                        ) : (
+                          <span className="um-chip">{u.role || 'user'}</span>
+                        )}
+                        <span className="um-email">{u.email || ''}</span>
+                      </div>
+                    </div>
+                    {isAdmin && !isCurrentUser && (
+                      <div className="um-card-actions">
+                        {isEditingThis ? (
+                          <>
+                            <button
+                              className="um-action-btn um-save-btn"
+                              onClick={() => {
+                                handleUpdateRole(u, newRoleValue)
+                              }}
+                            >
+                              ✓ Kaydet
+                            </button>
+                            <button
+                              className="um-action-btn um-cancel-btn"
+                              onClick={() => {
+                                setEditingUser(null)
+                                setNewRoleValue('')
+                              }}
+                            >
+                              ✕ İptal
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="um-action-btn um-edit-btn"
+                              onClick={() => {
+                                setEditingUser(u)
+                                setNewRoleValue(u.role || 'user')
+                              }}
+                            >
+                              ✎ Rol Değiştir
+                            </button>
+                            <button
+                              className="um-action-btn um-delete-btn"
+                              onClick={() => handleDeleteUser(u)}
+                            >
+                              🗑 Sil
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
             {filtered.length === 0 ? <div className="um-empty">Kayıt bulunamadı.</div> : null}
           </div>
         </section>
       </main>
 
       <AddUserModal isOpen={addOpen} onClose={() => setAddOpen(false)} />
+      <PasswordConfirmModal
+        isOpen={deletePasswordModal}
+        onClose={() => {
+          setDeletePasswordModal(false)
+          setUserToDelete(null)
+        }}
+        onConfirm={confirmDeleteUser}
+        title="Kullanıcıyı Sil"
+        message={`${userToDelete?.email || 'Bu kullanıcıyı'} silmek istediğinizden emin misiniz?`}
+      />
     </div>
   )
 }
